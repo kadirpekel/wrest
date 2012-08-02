@@ -1,4 +1,4 @@
 wrest
 =====
 
-thin rest client
+Thin rest client with no dependencies
