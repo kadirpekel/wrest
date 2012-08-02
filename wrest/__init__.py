@@ -30,13 +30,15 @@ class Client(object):
 
     HTTP_METHODS = ('get', 'head', 'post', 'put', 'delete')
 
-    def __init__(self, base_url):
+    def __init__(self, base_url, request_class=RestRequest):
         """ Constructor
 
         Arguments:
         base_url -- the url identifies the root path of rest service
+        request_class -- class ref to instantiate as internal request instances
         """
         self.base_url = base_url
+        self.request_class = request_class
 
         # Dynamically bind http verbs as instance functions
         def bind_method (method):
@@ -57,7 +59,7 @@ class Client(object):
         headers -- dictionary object which represents http headers
         """
         url = "%s%s" % (self.base_url, path or '')
-        req = RestRequest(url, method=method or 'GET')
+        req = self.request_class(url, method=method or 'GET')
         for k, v in headers.items() or {}: req.add_header(k, v)
         resp = urllib2.urlopen(req)
         body = resp.read()
