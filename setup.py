@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name = 'wrest',
     packages = ['wrest'],
-    version = '0.0.3',
+    version = '0.0.4',
     description = 'Thin rest client with no dependencies',
     author='Kadir Pekel',
     author_email='kadirpekel@gmail.com',
@@ -14,8 +14,5 @@ setup(
         'License :: OSI Approved :: GNU General Public License (GPL)',
         'Operating System :: OS Independent',
         'Development Status :: 1 - Planning',
-        'Environment :: Console',
-        'Intended Audience :: Science/Research',
-        'Topic :: Scientific/Engineering :: GIS'
     ]
 )

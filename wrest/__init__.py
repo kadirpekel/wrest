@@ -90,6 +90,6 @@ class Client(object):
         data = kwargs.get('data', None)
 
         if qs:
-            qs = "?" + "&".join(["=".join([(k, v) for k, v in qs.items()])])
+            qs = "?" + "&".join(["=".join((k, v)) for k, v in qs.items()])
         path = "/%s%s" % ("/".join(args), qs or '')
         return self.request(method, path, data, headers)
