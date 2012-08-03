@@ -1,6 +1,6 @@
 import urllib2, base64, json
 
-class RestRequest(urllib2.Request):
+class ClientRequest(urllib2.Request):
     """Since urllib2 `Request` class supports only the http methods of 'GET'
     and 'POST', this subclass is intended to support all of them.
     """
@@ -30,7 +30,7 @@ class Client(object):
 
     HTTP_METHODS = ('get', 'head', 'post', 'put', 'delete')
 
-    def __init__(self, base_url, request_class=RestRequest):
+    def __init__(self, base_url, request_class=ClientRequest):
         """ Constructor
 
         Arguments:
@@ -43,43 +43,53 @@ class Client(object):
         # Dynamically bind http verbs as instance functions
         def bind_method (method):
             def f(*args, **kwargs):
-                return self.rest(method, *args, **kwargs)
+                kwargs['method'] = method
+                return self.rest(*args, **kwargs)
             return f
         for method in Client.HTTP_METHODS:
             setattr(self, method, bind_method(method))
 
-    def request(self, path, method="GET", headers={}):
+    def request(self, method, path, data, headers):
         """ Make http request in order to retrieve a valid http response.
 
         Arguments:
-        path -- path of resource relative to base url
-
-        Keyword Arguments:
         method -- name of one of http methods
+        path -- path of resource relative to base url
+        data -- request body
         headers -- dictionary object which represents http headers
         """
-        url = "%s%s" % (self.base_url, path or '')
+        url = "%s%s" % (self.base_url, path or '/')
         req = self.request_class(url, method=method or 'GET')
-        for k, v in headers.items() or {}: req.add_header(k, v)
-        resp = urllib2.urlopen(req)
+        if headers:
+            for k, v in headers.items() or {}: req.add_header(k, v)
+        resp = urllib2.urlopen(req, data)
         body = resp.read()
         resp.close()
         info = dict(resp.info())
         content_type = info.get('content-type', None)
         if content_type and content_type.lower().find('application/json') >= 0:
-            return json.loads(body)
+            return body and json.loads(body) or json.loads("{}")
         return body
 
-    def rest(self, method, *args, **kwargs):
+    def rest(self, *args, **kwargs):
         """ Simplifies http requests by mapping *args to path and **kwargs to
-        querystring components.
+        other request components.
 
         Arguments:
-        method -- name of one of http methods
         *args -- list of path components
-        **kwargs -- dict of querystring components
+
+        Keyword Arguments:
+        method -- name of one of http methods
+        headers -- dictionary object which represents http headers
+        query -- query string dictionary
+        data -- request body
         """
-        headers = kwargs.pop('headers', {})
-        qs = "&".join(["=".join((str(k), str(v))) for k, v in kwargs.items()])
-        path = "/%s?%s" % ("/".join(args), qs)
-        return self.request(path, method, headers)
+        method = kwargs.get('method', 'get')
+        headers = kwargs.get('headers', None)
+        qs = kwargs.get('query', None)
+        data = kwargs.get('data', None)
+
+        if qs:
+            qs = "?" + "&".join(["=".join([(k, v) for k, v in qs.items()])])
+        path = "/%s%s" % ("/".join(args), qs or '')
+        return self.request(method, path, data, headers)
