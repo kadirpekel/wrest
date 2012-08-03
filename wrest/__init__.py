@@ -61,15 +61,15 @@ class Client(object):
         url = "%s%s" % (self.base_url, path or '/')
         req = self.request_class(url, method=method or 'GET')
         if headers:
-            for k, v in headers.items() or {}: req.add_header(k, v)
+            for k, v in headers.items(): req.add_header(k, v)
         resp = urllib2.urlopen(req, data)
         body = resp.read()
         resp.close()
         info = dict(resp.info())
         content_type = info.get('content-type', None)
         if content_type and content_type.lower().find('application/json') >= 0:
-            return body and json.loads(body) or json.loads("{}")
-        return body
+            return (json.loads(body), info)
+        return (body, info)
 
     def rest(self, *args, **kwargs):
         """ Simplifies http requests by mapping *args to path and **kwargs to

@@ -23,7 +23,8 @@ class TestCaseWrest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.server = Process(target=run, kwargs={'host': HOST, 'port': PORT})
+        cls.server = Process(target=run, kwargs={'host': HOST, 'port': PORT,
+                                                                'quiet': True})
         cls.server.start()
         time.sleep(1) # Let server start in parallel execution
         cls.client = Client(BASE_URL)
@@ -35,11 +36,11 @@ class TestCaseWrest(unittest.TestCase):
     def test_methods(self):
         for method in ['get', 'post', 'put', 'delete']:
             rest = getattr(self.client, method)
-            resp = rest('sample', 'path', 'to', 'resource')
+            resp, info = rest('sample', 'path', 'to', 'resource')
             self.assertEqual(resp['method'].lower(), method)
 
     def test_path(self):
-        resp = self.client.get('sample', 'path', 'to', 'resource')
+        resp, info = self.client.get('sample', 'path', 'to', 'resource')
         self.assertEqual(resp.get('path'), PATH)
 
 if __name__ == '__main__':
