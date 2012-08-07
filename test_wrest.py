@@ -46,22 +46,27 @@ class TestCaseWrest(unittest.TestCase):
         for method in ['get', 'post', 'put', 'delete']:
             rest = getattr(self.client, method)
             resp, info = rest('sample', 'path', 'to', 'resource')
-            self.assertEqual(resp['method'].lower(), method)
+            self.assertIsNotNone(resp.get('method', None))
+            self.assertEqual(resp.get('method'), method)
 
     def test_path(self):
         resp, info = self.client.get('sample', 'path', 'to', 'resource')
+        self.assertIsNotNone(resp.get('path', None))
         self.assertEqual(resp.get('path'), PATH)
 
     def test_body(self):
         body = "body fixture"
         resp, info = self.client.post('sample', 'path', 'to', 'resource',
             data=body, headers={'Content-Length': len(body)})
+        self.assertIsNotNone(body)
         self.assertEqual(resp.get('body'), body)
 
     def test_custom_header(self):
         resp, info = self.client.post('sample', 'path', 'to', 'resource',
             headers={'foo': 'bar'})
-        headers = resp.get('headers')
+        headers = resp.get('headers', None)
+        self.assertIsNotNone(headers)
+        self.assertIsNotNone(headers.get('HTTP_FOO', None))
         self.assertEqual(headers.get('HTTP_FOO'), 'bar')
 
 if __name__ == '__main__':
