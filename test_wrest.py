@@ -13,20 +13,19 @@ BASE_URL = "http://%s:%s" % (HOST, PORT)
 PATH = '/sample/path/to/resource'
 
 def fixture_app(environ, start_response):
-    start_response('200 OK', [('Content-type','application/json')])
-    content_length = 0
-    try:
-        content_length = int(environ.get('CONTENT_LENGTH'))
-    except:
-        pass
+    content_length = int(environ.get('CONTENT_LENGTH', None) or '0')
     headers = dict([(k, v) for k, v in environ.items() if k.find("HTTP_") == 0])
+    body = None
+    if content_length:
+        body = environ.get('wsgi.input').read(content_length)
     response_obj = {
         'method': environ.get('REQUEST_METHOD'),
         'path': environ.get('PATH_INFO'),
-        'body': environ.get('wsgi.input').read(content_length),
+        'body': body,
         'headers': headers,
         'querystring': environ.get('QUERY_STRING')
     }
+    start_response('200 OK', [('Content-type','application/json')])
     return json.dumps(response_obj)
 
 class TestCaseWrest(unittest.TestCase):
@@ -52,6 +51,18 @@ class TestCaseWrest(unittest.TestCase):
     def test_path(self):
         resp, info = self.client.get('sample', 'path', 'to', 'resource')
         self.assertEqual(resp.get('path'), PATH)
+
+    def test_body(self):
+        body = "body fixture"
+        resp, info = self.client.post('sample', 'path', 'to', 'resource',
+            data=body, headers={'Content-Length': len(body)})
+        self.assertEqual(resp.get('body'), body)
+
+    def test_custom_header(self):
+        resp, info = self.client.post('sample', 'path', 'to', 'resource',
+            headers={'foo': 'bar'})
+        headers = resp.get('headers')
+        self.assertEqual(headers.get('HTTP_FOO'), 'bar')
 
 if __name__ == '__main__':
     unittest.main()
