@@ -47,7 +47,7 @@ class TestCaseWrest(unittest.TestCase):
             rest = getattr(self.client, method)
             resp, info = rest('sample', 'path', 'to', 'resource')
             self.assertIsNotNone(resp.get('method', None))
-            self.assertEqual(resp.get('method'), method)
+            self.assertEqual(resp.get('method').lower(), method)
 
     def test_path(self):
         resp, info = self.client.get('sample', 'path', 'to', 'resource')
