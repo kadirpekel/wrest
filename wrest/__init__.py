@@ -72,7 +72,7 @@ class Client(object):
         resp = urllib2.urlopen(req, data)
         body = resp.read()
         resp.close()
-        info = dict(resp.info())
+        info = resp.info()
         content_type = info.get('content-type', None)
         if content_type and content_type.lower().find('application/json') >= 0:
             return (json.loads(body), info)
