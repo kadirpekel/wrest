@@ -1,4 +1,4 @@
-import urllib2, base64, json
+import urllib2, json, base64
 
 class ClientRequest(urllib2.Request):
     """Since urllib2 `Request` class supports only the http methods of 'GET'
@@ -30,20 +30,24 @@ class Client(object):
 
     HTTP_METHODS = ('get', 'head', 'post', 'put', 'delete')
 
-    def __init__(self, base_url, request_class=ClientRequest):
+    def __init__(self, base_url, request_class=ClientRequest, username=None, password=None):
         """ Constructor
 
         Arguments:
         base_url -- the url identifies the root path of rest service
         request_class -- class ref to instantiate as internal request instances
+        username -- username to use for basic authentication
+        password -- password to use for basic authentication
         """
         self.base_url = base_url
         self.request_class = request_class
-
+        self.username = username
+        self.password = password
+        
         # Dynamically bind http verbs as instance functions
         def bind_method (method):
             def f(*args, **kwargs):
-                kwargs['method'] = method
+                kwargs['method'] = method.upper()
                 return self.rest(*args, **kwargs)
             return f
         for method in Client.HTTP_METHODS:
@@ -60,6 +64,9 @@ class Client(object):
         """
         url = "%s%s" % (self.base_url, path or '/')
         req = self.request_class(url, method=method or 'GET')
+        if self.username and self.password:
+            base64string = base64.encodestring('%s:%s' % (self.username, self.password))
+            req.add_header("Authorization", "Basic %s" % base64string) 
         if headers:
             for k, v in headers.items(): req.add_header(k, v)
         resp = urllib2.urlopen(req, data)
