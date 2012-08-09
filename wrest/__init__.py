@@ -23,14 +23,16 @@ class ClientRequest(urllib2.Request):
         """Overrides `urllib2.Request.get_method` to able to return varity of
         http methods.
         """
-        return self.method or urllib2.Request.get_method(self)
+        return self.method and self.method.upper() \
+                                            or urllib2.Request.get_method(self)
 
 class Client(object):
     """ Actual class does the rest operations."""
 
     HTTP_METHODS = ('get', 'head', 'post', 'put', 'delete')
 
-    def __init__(self, base_url, request_class=ClientRequest, username=None, password=None):
+    def __init__(self, base_url, request_class=ClientRequest, username=None,
+                                                                password=None):
         """ Constructor
 
         Arguments:
@@ -47,7 +49,7 @@ class Client(object):
         # Dynamically bind http verbs as instance functions
         def bind_method (method):
             def f(*args, **kwargs):
-                kwargs['method'] = method.upper()
+                kwargs['method'] = method
                 return self.rest(*args, **kwargs)
             return f
         for method in Client.HTTP_METHODS:
@@ -65,7 +67,8 @@ class Client(object):
         url = "%s%s" % (self.base_url, path or '/')
         req = self.request_class(url, method=method or 'GET')
         if self.username and self.password:
-            base64string = base64.encodestring('%s:%s' % (self.username, self.password))
+            base64string = base64.encodestring(
+                                    '%s:%s' % (self.username, self.password))
             req.add_header("Authorization", "Basic %s" % base64string) 
         if headers:
             for k, v in headers.items(): req.add_header(k, v)
