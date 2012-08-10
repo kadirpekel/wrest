@@ -57,13 +57,20 @@ class TestCaseWrest(unittest.TestCase):
     def test_body(self):
         body = "body fixture"
         resp, info = self.client.post('sample', 'path', 'to', 'resource',
-            data=body, headers={'Content-Length': len(body)})
+                            data=body, headers={'Content-Length': len(body)})
         self.assertIsNotNone(body)
         self.assertEqual(resp.get('body'), body)
 
-    def test_custom_header(self):
+    def test_query(self):
         resp, info = self.client.post('sample', 'path', 'to', 'resource',
-            headers={'foo': 'bar'})
+                                                        query={'foo': 'bar'})
+        querystring = resp.get('querystring', None)
+        self.assertIsNotNone(querystring)
+        self.assertEqual(querystring, 'foo=bar')
+
+    def test_headers(self):
+        resp, info = self.client.post('sample', 'path', 'to', 'resource',
+                                                        headers={'foo': 'bar'})
         headers = resp.get('headers', None)
         self.assertIsNotNone(headers)
         self.assertIsNotNone(headers.get('HTTP_FOO', None))

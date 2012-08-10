@@ -11,7 +11,7 @@ class ClientRequest(urllib2.Request):
 
         Arguments:
         url -- actual url which http request is gonna be sent
-        method -- name of one of http methods
+        method -- name of one of http methods, must be uppercased.
 
         Keyword Arguments:
         **kwargs -- `urllib2.Request` class constructor's keyword args
@@ -23,16 +23,15 @@ class ClientRequest(urllib2.Request):
         """Overrides `urllib2.Request.get_method` to able to return varity of
         http methods.
         """
-        return self.method and self.method.upper() \
-                                            or urllib2.Request.get_method(self)
+        return self.method or urllib2.Request.get_method(self)
 
 class Client(object):
     """ Actual class does the rest operations."""
 
-    HTTP_METHODS = ('get', 'head', 'post', 'put', 'delete')
+    HTTP_METHODS = ('GET', 'HEAD', 'POST', 'PUT', 'DELETE')
 
     def __init__(self, base_url, request_class=ClientRequest, username=None,
-                                                                password=None):
+                                                    password=None, debug=False):
         """ Constructor
 
         Arguments:
@@ -40,11 +39,13 @@ class Client(object):
         request_class -- class ref to instantiate as internal request instances
         username -- username to use for basic authentication
         password -- password to use for basic authentication
+        debug -- flag if want to print out some debugging information
         """
         self.base_url = base_url
         self.request_class = request_class
         self.username = username
         self.password = password
+        self.debug = debug
         
         # Dynamically bind http verbs as instance functions
         def bind_method (method):
@@ -53,19 +54,26 @@ class Client(object):
                 return self.rest(*args, **kwargs)
             return f
         for method in Client.HTTP_METHODS:
-            setattr(self, method, bind_method(method))
+            setattr(self, method.lower(), bind_method(method))
 
-    def request(self, method, path, data, headers):
+    def request(self, method, path, query=None, data=None, headers=None):
         """ Make http request in order to retrieve a valid http response.
 
         Arguments:
         method -- name of one of http methods
         path -- path of resource relative to base url
+        query -- query string dictionary
         data -- request body
         headers -- dictionary object which represents http headers
         """
-        url = "%s%s" % (self.base_url, path or '/')
-        req = self.request_class(url, method=method or 'GET')
+
+        qs = ''
+        if query:
+            qs = "?" + "&".join(["=".join((k, v)) for k, v in query.items()])
+        url = "%s%s%s" % (self.base_url, path or '/', qs)
+        if self.debug:
+            print("%s %s" % (method, url))
+        req = self.request_class(url, method=method.upper() or 'GET')
         if self.username and self.password:
             base64string = base64.encodestring(
                                     '%s:%s' % (self.username, self.password))
@@ -90,16 +98,10 @@ class Client(object):
 
         Keyword Arguments:
         method -- name of one of http methods
-        headers -- dictionary object which represents http headers
         query -- query string dictionary
+        headers -- dictionary object which represents http headers
         data -- request body
         """
-        method = kwargs.get('method', 'get')
-        headers = kwargs.get('headers', None)
-        qs = kwargs.get('query', None)
-        data = kwargs.get('data', None)
-
-        if qs:
-            qs = "?" + "&".join(["=".join((k, v)) for k, v in qs.items()])
-        path = "/%s%s" % ("/".join(args), qs or '')
-        return self.request(method, path, data, headers)
+        method = kwargs.pop('method', None)
+        path = "/%s" % "/".join(args)
+        return self.request(method, path, **kwargs)
