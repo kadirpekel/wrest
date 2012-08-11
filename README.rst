@@ -9,8 +9,8 @@ Here is a sample usage::
 
   from wrest import Client
   client = Client('https://api.twitter.com/1')
-  tweets, info = client.get('statuses', 'user_timeline.json',
-                        query={'screen_name':'ThePSF', 'count':'10'})
+  tweets = client.get('statuses', 'user_timeline.json',
+                        query={'screen_name':'kadirpekel', 'count':'10'}).as_json()
   for tweet in tweets:
     print(tweet.get('text'))
 
