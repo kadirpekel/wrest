@@ -31,7 +31,7 @@ class Client(object):
     HTTP_METHODS = ('GET', 'HEAD', 'POST', 'PUT', 'DELETE')
 
     def __init__(self, base_url, request_class=ClientRequest, username=None,
-                                                    password=None, debug=False):
+                                            password=None, debuglevel=False):
         """ Constructor
 
         Arguments:
@@ -39,13 +39,17 @@ class Client(object):
         request_class -- class ref to instantiate as internal request instances
         username -- username to use for basic authentication
         password -- password to use for basic authentication
-        debug -- flag if want to print out some debugging information
+        debuglevel -- debugging level
         """
         self.base_url = base_url
         self.request_class = request_class
         self.username = username
         self.password = password
-        self.debug = debug
+
+        if debuglevel > 0:        
+            handler = urllib2.HTTPHandler(debuglevel=debuglevel)
+            opener = urllib2.build_opener(handler)
+            urllib2.install_opener(opener)
         
         # Dynamically bind http verbs as instance functions
         def bind_method (method):
@@ -66,13 +70,10 @@ class Client(object):
         data -- request body
         headers -- dictionary object which represents http headers
         """
-
         qs = ''
         if query:
             qs = "?" + "&".join(["=".join((k, v)) for k, v in query.items()])
         url = "%s%s%s" % (self.base_url, path or '/', qs)
-        if self.debug:
-            print("%s %s" % (method, url))
         req = self.request_class(url, method=method.upper() or 'GET')
         if self.username and self.password:
             base64string = base64.encodestring(
@@ -80,14 +81,24 @@ class Client(object):
             req.add_header("Authorization", "Basic %s" % base64string) 
         if headers:
             for k, v in headers.items(): req.add_header(k, v)
-        resp = urllib2.urlopen(req, data)
-        body = resp.read()
+        try:
+            resp = urllib2.urlopen(req, data)
+        except urllib2.HTTPError, error:
+            resp = error
+        setattr(resp, 'body', resp.read())
         resp.close()
-        info = resp.info()
-        content_type = info.get('content-type', None)
+        setattr(resp, 'json', None)
+        setattr(resp, 'is_json', False)
+        content_type = resp.info().get('content-type', None)
         if content_type and content_type.lower().find('application/json') >= 0:
-            return (json.loads(body), info)
-        return (body, info)
+            try:
+                resp.json = json.loads(resp.body)
+                resp.is_json = True
+            except:
+                # headers says it is a json response but, actual response is not
+                # a valid json. So skip deserializing json.
+                pass
+        return resp
 
     def rest(self, *args, **kwargs):
         """ Simplifies http requests by mapping *args to path and **kwargs to
