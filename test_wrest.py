@@ -47,40 +47,45 @@ class TestCaseWrest(unittest.TestCase):
             rest = getattr(self.client, method)
             resp = rest('sample', 'path', 'to', 'resource')
             self.assertTrue(resp.is_json)
-            self.assertIsNotNone(resp.json)
-            self.assertIsNotNone(resp.json.get('method', None))
-            self.assertEqual(resp.json.get('method').lower(), method)
+            json = resp.as_json()
+            self.assertIsNotNone(json)
+            self.assertIsNotNone(json.get('method', None))
+            self.assertEqual(json.get('method').lower(), method)
 
     def test_path(self):
         resp = self.client.get('sample', 'path', 'to', 'resource')
         self.assertTrue(resp.is_json)
-        self.assertIsNotNone(resp.json)
-        self.assertIsNotNone(resp.json.get('path', None))
-        self.assertEqual(resp.json.get('path'), PATH)
+        json = resp.as_json()
+        self.assertIsNotNone(json)
+        self.assertIsNotNone(json.get('path', None))
+        self.assertEqual(json.get('path'), PATH)
 
     def test_body(self):
         body = "body fixture"
         resp = self.client.post('sample', 'path', 'to', 'resource',
                             data=body, headers={'Content-Length': len(body)})
         self.assertTrue(resp.is_json)
-        self.assertIsNotNone(resp.json)
-        self.assertIsNotNone(resp.json.get('body', None))
-        self.assertEqual(resp.json.get('body'), body)
+        json = resp.as_json()
+        self.assertIsNotNone(json)
+        self.assertIsNotNone(json.get('body', None))
+        self.assertEqual(json.get('body'), body)
 
     def test_query(self):
         resp = self.client.post('sample', 'path', 'to', 'resource',
                                                         query={'foo': 'bar'})
         self.assertTrue(resp.is_json)
-        self.assertIsNotNone(resp.json)
-        self.assertIsNotNone(resp.json.get('querystring', None))
-        self.assertEqual(resp.json.get('querystring'), 'foo=bar')
+        json = resp.as_json()
+        self.assertIsNotNone(json)
+        self.assertIsNotNone(json.get('querystring', None))
+        self.assertEqual(json.get('querystring'), 'foo=bar')
 
     def test_headers(self):
         resp = self.client.post('sample', 'path', 'to', 'resource',
                                                         headers={'foo': 'bar'})
         self.assertTrue(resp.is_json)
-        self.assertIsNotNone(resp.json)
-        headers = resp.json.get('headers', None)
+        json = resp.as_json()
+        self.assertIsNotNone(json)
+        headers = json.get('headers', None)
         self.assertIsNotNone(headers)
         self.assertIsNotNone(headers.get('HTTP_FOO', None))
         self.assertEqual(headers.get('HTTP_FOO'), 'bar')

@@ -87,17 +87,12 @@ class Client(object):
             resp = error
         setattr(resp, 'body', resp.read())
         resp.close()
-        setattr(resp, 'json', None)
         setattr(resp, 'is_json', False)
         content_type = resp.info().get('content-type', None)
         if content_type and content_type.lower().find('application/json') >= 0:
-            try:
-                resp.json = json.loads(resp.body)
-                resp.is_json = True
-            except:
-                # headers says it is a json response but, actual response is not
-                # a valid json. So skip deserializing json.
-                pass
+            resp.is_json = True
+        def as_json(): return json.loads(resp.body)
+        setattr(resp, 'as_json', as_json)
         return resp
 
     def rest(self, *args, **kwargs):
